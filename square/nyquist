@@ -1,0 +1,27 @@
+;version 4
+
+(setf threshold 0.2)
+
+;; Time resolution in seconds
+(setf time-res 0.1)
+
+
+(defun lowrate (sig step)
+  (when (arrayp sig)
+    (setf sig (mix-to-mono sig)))
+  (snd-avg sig step step op-peak))
+
+
+(defun mix-to-mono (sig)
+  (mult 0.5 (sum (aref sig 0)
+                 (aref sig 1))))
+
+
+(setf step (truncate (* *sound-srate* time-res)))
+
+(let ((lo-rate (lowrate *track* step))
+      (bignum (power 2 32)))
+  (setf lo-rate (sum lo-rate (- threshold)))
+  (setf *track* (force-srate *sound-srate* lo-rate))
+  (mult bignum (clip (s-max *track* 0) (/ bignum))))
+
