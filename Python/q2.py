@@ -1,47 +1,33 @@
 import json
 import binascii
-import textwrap
 from os.path import exists
-
 import bitstring as bitstring
-import numpy as np
-import matplotlib.pyplot as plt
 from rflib import *
-from scipy.io import wavfile
 
-_ONE = '1'
-_ZERO = '0'
+_ZERO = '0'  # \ = high_low
+_ONE = '1'  # / = low_high
 
-Q2_PREAMBLE_PARTIAL_BITS_READ = 29
-# Q2_PREAMBLE_PARTIAL_BITS_SEND = 48
-Q2_PREAMBLE_PARTIAL_BITS_SEND = 94
-Q2_FINAL_PARTIAL_BITS_READ = 8
-# Q2_FINAL_PARTIAL_BITS_SEND = 12
-Q2_FINAL_PARTIAL_BITS_SEND = 26
 Q2_BIT_RATE_READ = 1700
 Q2_BIT_RATE_SEND = 1700
+
 Q2_PARTIAL_BITS_PER_BIT_READ = 4
+Q2_PARTIAL_BITS_PER_BIT_SEND = 4
 Q2_SAMPLES_PER_PARTIAL_BIT_READ = 3
-# Q2_PARTIAL_BITS_PER_BIT_SEND = 10
-Q2_PARTIAL_BITS_PER_BIT_SEND = 20
+Q2_SAMPLES_PER_PARTIAL_BIT_SEND = 1
 
-Q2_PARTIAL_BITS_FOR_ZERO_READ = '000011'
-# Q2_PARTIAL_BITS_FOR_ZERO_SEND = '0000000111'
 Q2_PARTIAL_BITS_FOR_ZERO_SEND = _ONE * 2 + _ZERO * 2
-
-Q2_PARTIAL_BITS_FOR_ONE_READ = '011111'
-# Q2_PARTIAL_BITS_FOR_ONE_SEND = '0011111111'
 Q2_PARTIAL_BITS_FOR_ONE_SEND = _ZERO * 2 + _ONE * 2
 
 Q2_PARTIAL_BIT_RATE_READ = Q2_BIT_RATE_READ * Q2_PARTIAL_BITS_PER_BIT_READ
 Q2_PARTIAL_BIT_RATE_SEND = Q2_BIT_RATE_SEND * Q2_PARTIAL_BITS_PER_BIT_SEND
+
+Q2_PREAMBLE_BITS_SEND = 214
 Q2_MESSAGE_BITS = 96
+Q2_FINAL_PARTIAL_BITS_SEND = 16
+
 Q2_MODULATION_FREQUENCY = 434421100
 
-MANCHESTER_ZERO = '0'  # \ = high_low
-MANCHESTER_ONE = '1'  # / = low_high
-
-_MY_DEBUG = True
+_MY_DEBUG = False
 
 
 def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit):
@@ -52,9 +38,9 @@ def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit):
         list_of_streams_of_partial_bits = []
         while True:
             try:
-                #blocksize = 30
+                # blocksize = 30
 
-                y, timestamp = d.RFrecv(blocksize=8*Q2_SAMPLES_PER_PARTIAL_BIT_READ)
+                y, timestamp = d.RFrecv(blocksize=8 * Q2_SAMPLES_PER_PARTIAL_BIT_READ)
                 yhex = binascii.hexlify(y).decode()
                 stream_of_partial_bits = bin(int(yhex, 16))[2:]
 
@@ -62,10 +48,10 @@ def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit):
                     _MY_DEBUG and print("(%5.3f) received:  %s | %s" % (timestamp, yhex, stream_of_partial_bits))
                     list_of_streams_of_partial_bits.append(stream_of_partial_bits)
 
-                    #blocksize = 252
+                    # blocksize = 252
 
-                    #for blocksize in [148,252,252,148,252,252,148,252,252,148]:
-                    for blocksize in [252,252,236,252,236,252,252]:
+                    # for blocksize in [148,252,252,148,252,252,148,252,252,148]:
+                    for blocksize in [252, 252, 236, 252, 236, 252, 252]:
                         y, timestamp = d.RFrecv(blocksize=blocksize)
                         yhex = binascii.hexlify(y).decode()
                         stream_of_partial_bits = bin(int(yhex, 16))[2:]
@@ -102,20 +88,9 @@ def could_be_part_of_preamble(stream_of_partial_bits, samples_per_bit):
         else:
             a = 1
     return False
-    if False:
-        # return False
-        stream_of_partial_bits_filtered_split_list = [stream_of_partial_bits_filtered[i:i + blocksize] for i in range(0, len(stream_of_partial_bits_filtered), blocksize)]
-        for partial_stream in stream_of_partial_bits_filtered_split_list:
-            count_1s = len([bit for bit in partial_stream if bit == "1"])
-            fraction_of_ones = count_1s / len(partial_stream)
-            # print(f'{round(fraction_of_ones*10,0)}', end='')
-            if 0.4 <= fraction_of_ones <= 0.6:
-                return True
-
-        return False
 
 
-def get_next_preamble_position(list_of_received_partial_bit_counts, first_position_to_check):
+def get_next_message_start_position(list_of_received_partial_bit_counts, first_position_to_check):
     for pos in range(first_position_to_check, len(list_of_received_partial_bit_counts) - 6):
         if -2.5 <= list_of_received_partial_bit_counts[pos] <= -1.5:
             if 3.5 <= list_of_received_partial_bit_counts[pos + 1] <= 4.5:
@@ -145,7 +120,7 @@ def get_simple_sequence(list_of_received_partial_bit_counts, first_position_to_c
 
         if 1.0 <= left_value <= 3.0:
             if right_value <= -1.0:
-                simple_sequence.append(MANCHESTER_ZERO)
+                simple_sequence.append(_ZERO)
                 if right_value < -2.0:
                     left_value = right_value + 2.0
                 else:
@@ -156,7 +131,7 @@ def get_simple_sequence(list_of_received_partial_bit_counts, first_position_to_c
                 a = 1
         elif -3.0 <= left_value <= -1.0:
             if 1.0 <= right_value:
-                simple_sequence.append(MANCHESTER_ONE)
+                simple_sequence.append(_ONE)
                 if right_value > 2.0:
                     left_value = right_value - 2.0
                 else:
@@ -186,10 +161,10 @@ def get_list_of_valid_messages(list_of_streams_of_partial_bits, samples_per_bit)
         # _MY_DEBUG and print(f'{stream_of_partial_bits=}')
 
         list_of_received_partial_bit_counts = convert_stream_of_partial_bits_to_list_of_partial_bit_counts(stream_of_partial_bits, samples_per_bit)
-        preamble_end_position = get_next_preamble_position(list_of_received_partial_bit_counts, 0)
+        message_start_position = get_next_message_start_position(list_of_received_partial_bit_counts, 0)
 
-        if preamble_end_position >= 0:
-            extracted_simple_sequence = get_simple_sequence(list_of_received_partial_bit_counts, first_position_to_check=preamble_end_position)
+        if message_start_position >= 0:
+            extracted_simple_sequence = get_simple_sequence(list_of_received_partial_bit_counts, first_position_to_check=message_start_position)
             _MY_DEBUG and print(f'[{sample_number}] {extracted_simple_sequence=}')
 
             if len(extracted_simple_sequence) < Q2_MESSAGE_BITS:
@@ -197,7 +172,7 @@ def get_list_of_valid_messages(list_of_streams_of_partial_bits, samples_per_bit)
             else:
                 is_valid = True
                 for symbol in extracted_simple_sequence[:Q2_MESSAGE_BITS]:
-                    if symbol not in [MANCHESTER_ONE, MANCHESTER_ZERO]:
+                    if symbol not in [_ONE, _ZERO]:
                         print('Error! Extracted sequence containing unexpected symbols, ignoring')
                         is_valid = False
                         break
@@ -309,16 +284,18 @@ def execute_read_messages():
     except Exception as e:
         d.setModeIDLE()
 
+
 def convert_message_to_partial_bit_string_to_send(message: str):
     partial_bit_string = ''
 
     for bit in message:
-        if bit == MANCHESTER_ZERO:
+        if bit == _ZERO:
             partial_bit_string += Q2_PARTIAL_BITS_FOR_ZERO_SEND
-        elif bit == MANCHESTER_ONE:
+        elif bit == _ONE:
             partial_bit_string += Q2_PARTIAL_BITS_FOR_ONE_SEND
 
     return partial_bit_string
+
 
 def add_x(partial_bit_string):
     partial_bit_string_hex = bitstring.BitArray(bin=partial_bit_string).tobytes()
@@ -327,11 +304,12 @@ def add_x(partial_bit_string):
 
     return partial_bit_string_hex
 
-def execute_send_messages():
-    message = ["101110000001001001010000100101010100100010011010100000110101011110111100010111100111111010110101", "101110000001001001010000100111101010110011010010101101001100100011110000111101000011111011011100", "101110000001001001010000100001100111000000100001000111011101000000011101101001011100111101010111"]
 
-    rfcat_samples_per_partial_bit = 4
-    tx_rate = Q2_BIT_RATE_SEND * rfcat_samples_per_partial_bit
+def execute_send_messages():
+    message_list = ["101110000001001001010000100101010100100010011010100000110101011110111100010111100111111010110101",
+                    "101110000001001001010000100111101010110011010010101101001100100011110000111101000011111011011100",
+                    "101110000001001001010000100001100111000000100001000111011101000000011101101001011100111101010111"]
+    tx_rate = Q2_PARTIAL_BIT_RATE_SEND * Q2_SAMPLES_PER_PARTIAL_BIT_SEND
 
     d = RfCat()
     d.setFreq(Q2_MODULATION_FREQUENCY)
@@ -340,26 +318,29 @@ def execute_send_messages():
     d.setMaxPower()
     d.lowball()
 
-    partial_bit_string_preamble = convert_message_to_partial_bit_string_to_send(MANCHESTER_ZERO * 46) + '111100' + ('111000' * 3)
-    partial_bit_string_message = convert_message_to_partial_bit_string_to_send(message)
-    partial_bit_string_hex = add_x(partial_bit_string_preamble + partial_bit_string_message)
+    partial_bit_string_preamble = convert_message_to_partial_bit_string_to_send(_ONE * Q2_PREAMBLE_BITS_SEND)
+    partial_bit_string_suffix = _ZERO * (Q2_PARTIAL_BITS_PER_BIT_SEND * Q2_FINAL_PARTIAL_BITS_SEND)
 
-    print(f'{partial_bit_string_preamble=}')
-    print(f'{partial_bit_string_message=}')
-    print(f'{partial_bit_string_hex=}')
+    for pos, message in enumerate(message_list):
+        partial_bit_string_message = convert_message_to_partial_bit_string_to_send(message)
+        partial_bit_string_hex = add_x(partial_bit_string_preamble + partial_bit_string_message + partial_bit_string_suffix)
 
-    d.makePktFLEN(len(partial_bit_string_hex))
+        # print(f'{partial_bit_string_preamble=}')
+        print(f'{partial_bit_string_message=}')
+        print(f'{partial_bit_string_hex=}')
 
-    d.RFxmit(partial_bit_string_hex, repeat=1)
+        if pos == 0:
+            d.makePktFLEN(len(partial_bit_string_hex))
+
+        d.RFxmit(partial_bit_string_hex, repeat=0)
+
     d.setModeIDLE()
-
-    # 369 para cualquier cadena, preambulo de 200 - preambulo normal, preambulo 29, mas cadena, mas 8 mini bits 0
 
 
 # --
 
 def main():
-    #execute_read_messages()
+    # execute_read_messages()
     execute_send_messages()
 
 

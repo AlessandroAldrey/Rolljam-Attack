@@ -1,45 +1,31 @@
 import json
 import binascii
-import textwrap
 from os.path import exists
-
 import bitstring as bitstring
-import numpy as np
-import matplotlib.pyplot as plt
 from rflib import *
-from scipy.io import wavfile
 
-_ONE = '1'
-_ZERO = '0'
+_ZERO = '0'  # \ = high_low
+_ONE = '1'  # / = low_high
 
-PASSAT_PREAMBLE_PARTIAL_BITS_READ = 29
-# PASSAT_PREAMBLE_PARTIAL_BITS_SEND = 48
-PASSAT_PREAMBLE_PARTIAL_BITS_SEND = 94
-PASSAT_FINAL_PARTIAL_BITS_READ = 8
-# PASSAT_FINAL_PARTIAL_BITS_SEND = 12
-PASSAT_FINAL_PARTIAL_BITS_SEND = 26
 PASSAT_BIT_RATE_READ = 1000
 PASSAT_BIT_RATE_SEND = 1000
+
 PASSAT_PARTIAL_BITS_PER_BIT_READ = 4
+PASSAT_PARTIAL_BITS_PER_BIT_SEND = 4
 PASSAT_SAMPLES_PER_PARTIAL_BIT_READ = 4
-# PASSAT_PARTIAL_BITS_PER_BIT_SEND = 10
-PASSAT_PARTIAL_BITS_PER_BIT_SEND = 20
+PASSAT_SAMPLES_PER_PARTIAL_BIT_SEND = 1
 
-PASSAT_PARTIAL_BITS_FOR_ZERO_READ = '000011'
-# PASSAT_PARTIAL_BITS_FOR_ZERO_SEND = '0000000111'
 PASSAT_PARTIAL_BITS_FOR_ZERO_SEND = _ONE * 2 + _ZERO * 2
-
-PASSAT_PARTIAL_BITS_FOR_ONE_READ = '011111'
-# PASSAT_PARTIAL_BITS_FOR_ONE_SEND = '0011111111'
 PASSAT_PARTIAL_BITS_FOR_ONE_SEND = _ZERO * 2 + _ONE * 2
 
 PASSAT_PARTIAL_BIT_RATE_READ = PASSAT_BIT_RATE_READ * PASSAT_PARTIAL_BITS_PER_BIT_READ
 PASSAT_PARTIAL_BIT_RATE_SEND = PASSAT_BIT_RATE_SEND * PASSAT_PARTIAL_BITS_PER_BIT_SEND
-PASSAT_MESSAGE_BITS = 80
-PASSAT_MODULATION_FREQUENCY = 434412100
 
-MANCHESTER_ZERO = '0'  # \ = high_low
-MANCHESTER_ONE = '1'  # / = low_high
+PASSAT_PREAMBLE_BITS_SEND = 46
+PASSAT_MESSAGE_BITS = 80
+PASSAT_FINAL_PARTIAL_BITS_SEND = 0
+
+PASSAT_MODULATION_FREQUENCY = 434412100
 
 _MY_DEBUG = False
 
@@ -73,10 +59,6 @@ def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit):
 
                     break
                 else:
-                    # if len(list_of_streams_of_partial_bits) >= 2:
-                    #     list_of_streams_of_partial_bits.append(stream_of_partial_bits)
-                    #     break
-                    # else:
                     _MY_DEBUG or print('.', end="")
                     list_of_streams_of_partial_bits = [stream_of_partial_bits]
             except ChipconUsbTimeoutException:
@@ -90,10 +72,8 @@ def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit):
 
 
 def could_be_part_of_preamble(stream_of_partial_bits, samples_per_bit):
-    # stream_of_partial_bits_filtered = remove_micro_glitches(stream_of_partial_bits)
     count_1s = len([bit for bit in stream_of_partial_bits if bit == "1"])
     fraction_of_ones = count_1s / len(stream_of_partial_bits)
-    # print(f'{int(round(fraction_of_ones * 10, 0))}', end='')
 
     if 0.4 <= fraction_of_ones <= 0.6:
         list_of_received_partial_bit_counts = convert_stream_of_partial_bits_to_list_of_partial_bit_counts(stream_of_partial_bits, samples_per_bit)[1:-1]
@@ -107,20 +87,9 @@ def could_be_part_of_preamble(stream_of_partial_bits, samples_per_bit):
         else:
             a = 1
     return False
-    if False:
-        # return False
-        stream_of_partial_bits_filtered_split_list = [stream_of_partial_bits_filtered[i:i + blocksize] for i in range(0, len(stream_of_partial_bits_filtered), blocksize)]
-        for partial_stream in stream_of_partial_bits_filtered_split_list:
-            count_1s = len([bit for bit in partial_stream if bit == "1"])
-            fraction_of_ones = count_1s / len(partial_stream)
-            # print(f'{round(fraction_of_ones*10,0)}', end='')
-            if 0.4 <= fraction_of_ones <= 0.6:
-                return True
-
-        return False
 
 
-def get_next_preamble_position(list_of_received_partial_bit_counts, first_position_to_check):
+def get_next_message_start_position(list_of_received_partial_bit_counts, first_position_to_check):
     for pos in range(first_position_to_check, len(list_of_received_partial_bit_counts) - 6):
         if 2.5 <= list_of_received_partial_bit_counts[pos] <= 3.5:
             if -3.5 <= list_of_received_partial_bit_counts[pos + 1] <= -2.5:
@@ -128,11 +97,11 @@ def get_next_preamble_position(list_of_received_partial_bit_counts, first_positi
                     if -3.5 <= list_of_received_partial_bit_counts[pos + 3] <= -2.5:
                         if 2.5 <= list_of_received_partial_bit_counts[pos + 4] <= 3.5:
                             if -3.5 <= list_of_received_partial_bit_counts[pos + 5] <= -2.5:
-                                return pos
+                                return pos+6
     return -1
 
 
-def get_simple_sequence(list_of_received_partial_bit_counts, first_position_to_check, last_position_to_check=None, expected_sample_sequence_lentgh=80):
+def get_simple_sequence(list_of_received_partial_bit_counts, first_position_to_check, last_position_to_check=None, expected_sample_sequence_lentgh=PASSAT_MESSAGE_BITS):
     if last_position_to_check is None:
         last_position_to_check = len(list_of_received_partial_bit_counts) - 1
 
@@ -150,7 +119,7 @@ def get_simple_sequence(list_of_received_partial_bit_counts, first_position_to_c
 
         if 1.0 <= left_value <= 3.0:
             if right_value <= -1.0:
-                simple_sequence.append(MANCHESTER_ZERO)
+                simple_sequence.append(_ZERO)
                 if right_value < -2.0:
                     left_value = right_value + 2.0
                 else:
@@ -161,7 +130,7 @@ def get_simple_sequence(list_of_received_partial_bit_counts, first_position_to_c
                 a = 1
         elif -3.0 <= left_value <= -1.0:
             if 1.0 <= right_value:
-                simple_sequence.append(MANCHESTER_ONE)
+                simple_sequence.append(_ONE)
                 if right_value > 2.0:
                     left_value = right_value - 2.0
                 else:
@@ -187,34 +156,30 @@ def get_list_of_valid_messages(list_of_streams_of_partial_bits, samples_per_bit)
     burst_list = []
 
     for sample_number, stream_of_partial_bits in enumerate(list_of_streams_of_partial_bits):
-        # if sample_number <= 2:
-        #     continue
-
-        # _MY_DEBUG and print(f'{stream_of_partial_bits=}')
         stream_of_partial_bits = remove_micro_glitches(stream_of_partial_bits)
         # _MY_DEBUG and print(f'{stream_of_partial_bits=}')
 
         list_of_received_partial_bit_counts = convert_stream_of_partial_bits_to_list_of_partial_bit_counts(stream_of_partial_bits, samples_per_bit)
-        preamble_3_position = get_next_preamble_position(list_of_received_partial_bit_counts, 0)
+        message_start_position = get_next_message_start_position(list_of_received_partial_bit_counts, 0)
 
-        if preamble_3_position >= 0:
-            extracted_simple_sequence = get_simple_sequence(list_of_received_partial_bit_counts, first_position_to_check=preamble_3_position + 6)
+        if message_start_position >= 0:
+            extracted_simple_sequence = get_simple_sequence(list_of_received_partial_bit_counts, first_position_to_check=message_start_position)
             _MY_DEBUG and print(f'[{sample_number}] {extracted_simple_sequence=}')
 
-            if len(extracted_simple_sequence) < 80:
-                print(f'Extracted sequence is not long enough, {len(extracted_simple_sequence)} < 80, ignoring sequence')
+            if len(extracted_simple_sequence) < PASSAT_MESSAGE_BITS:
+                print(f'Extracted sequence is not long enough, {len(extracted_simple_sequence)} < {PASSAT_MESSAGE_BITS}, ignoring sequence')
             else:
                 is_valid = True
-                for symbol in extracted_simple_sequence[:80]:
-                    if symbol not in [MANCHESTER_ONE, MANCHESTER_ZERO]:
+                for symbol in extracted_simple_sequence[:PASSAT_MESSAGE_BITS]:
+                    if symbol not in [_ONE, _ZERO]:
                         print('Error! Extracted sequence containing unexpected symbols, ignoring')
                         is_valid = False
                         break
                 if is_valid:
-                    burst_list.append(extracted_simple_sequence[:80])
+                    burst_list.append(extracted_simple_sequence[:PASSAT_MESSAGE_BITS])
         else:
             _MY_DEBUG and print(f'[{sample_number}] ! Preamble not found, sample will be ignored')
-            _MY_DEBUG and print(f'[{sample_number}] {list_of_received_partial_bit_counts=}')
+        _MY_DEBUG and print(f'[{sample_number}] {list_of_received_partial_bit_counts=}')
 
     message_matches = {}
 
@@ -233,14 +198,8 @@ def get_list_of_valid_messages(list_of_streams_of_partial_bits, samples_per_bit)
 
 def convert_stream_of_partial_bits_to_list_of_partial_bit_counts(stream_of_partial_bits, samples_per_bit):
     sampled_lengths = convert_stream_of_partial_bits_to_sampled_lengths_list(stream_of_partial_bits)
-    # print(f'{sampled_lengths=}')
-
-    if False:
-        list_of_received_partial_bit_counts_1d = [round(sampled_length / samples_per_bit, 1) for sampled_length in sampled_lengths]
-        print(f'{list_of_received_partial_bit_counts_1d=}')
-
     list_of_received_partial_bit_counts = [sampled_length / samples_per_bit for sampled_length in sampled_lengths]
-    # print(f'{list_of_received_partial_bit_counts=}')
+
     return list_of_received_partial_bit_counts
 
 
@@ -324,18 +283,18 @@ def execute_read_messages():
     except Exception as e:
         d.setModeIDLE()
 
-    a = 1
 
 def convert_message_to_partial_bit_string_to_send(message: str):
     partial_bit_string = ''
 
     for bit in message:
-        if bit == MANCHESTER_ZERO:
+        if bit == _ZERO:
             partial_bit_string += PASSAT_PARTIAL_BITS_FOR_ZERO_SEND
-        elif bit == MANCHESTER_ONE:
+        elif bit == _ONE:
             partial_bit_string += PASSAT_PARTIAL_BITS_FOR_ONE_SEND
 
     return partial_bit_string
+
 
 def add_x(partial_bit_string):
     partial_bit_string_hex = bitstring.BitArray(bin=partial_bit_string).tobytes()
@@ -344,10 +303,10 @@ def add_x(partial_bit_string):
 
     return partial_bit_string_hex
 
+
 def execute_send_messages():
     message = '00111111111111111101101001101010011100001000101010110101110010000100110111100010'
-    rfcat_samples_per_partial_bit = 4
-    tx_rate = PASSAT_BIT_RATE_SEND * rfcat_samples_per_partial_bit
+    tx_rate = PASSAT_PARTIAL_BIT_RATE_SEND * PASSAT_SAMPLES_PER_PARTIAL_BIT_SEND
 
     d = RfCat()
     d.setFreq(PASSAT_MODULATION_FREQUENCY)
@@ -356,7 +315,7 @@ def execute_send_messages():
     d.setMaxPower()
     d.lowball()
 
-    partial_bit_string_preamble = convert_message_to_partial_bit_string_to_send(MANCHESTER_ZERO * 46) + '111100' + ('111000' * 3)
+    partial_bit_string_preamble = convert_message_to_partial_bit_string_to_send(_ZERO * PASSAT_PREAMBLE_BITS_SEND) + '111100' + ('111000' * 3)
     partial_bit_string_message = convert_message_to_partial_bit_string_to_send(message)
     partial_bit_string_hex = add_x(partial_bit_string_preamble + partial_bit_string_message)
 
@@ -369,11 +328,12 @@ def execute_send_messages():
     d.RFxmit(partial_bit_string_hex, repeat=1)
     d.setModeIDLE()
 
+
 # --
 
 def main():
     execute_read_messages()
-    #execute_send_messages()
+    # execute_send_messages()
 
 
 # --
