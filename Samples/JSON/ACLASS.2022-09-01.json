@@ -325,5 +325,83 @@
         "type": "ACLASS",
         "state": "not used",
         "number_of_reads": 1
+    },
+    {
+        "list_of_streams": [
+            [
+                "0010110001100010101100011010010001000000110000001010011100101001011111010100000000",
+                1
+            ]
+        ],
+        "samples_per_bit": 1,
+        "timestamp": 1662064847.9846115,
+        "type": "ACLASS",
+        "state": "not used",
+        "number_of_reads": 1
+    },
+    {
+        "list_of_streams": [
+            [
+                "0001110011100110111110000011101001100000011111000111001011000011101110010000000000",
+                1
+            ]
+        ],
+        "samples_per_bit": 1,
+        "timestamp": 1662064854.1837099,
+        "type": "ACLASS",
+        "state": "not used",
+        "number_of_reads": 1
+    },
+    {
+        "list_of_streams": [
+            [
+                "0001110001010001101100000010110001111101010111011011111100101101011000001100000000",
+                1
+            ]
+        ],
+        "samples_per_bit": 1,
+        "timestamp": 1662064925.8330941,
+        "type": "ACLASS",
+        "state": "not used",
+        "number_of_reads": 1
+    },
+    {
+        "list_of_streams": [
+            [
+                "0001110011011000111010001011001011111001011011010011100011001110101101101000000000",
+                1
+            ]
+        ],
+        "samples_per_bit": 1,
+        "timestamp": 1662064935.1931055,
+        "type": "ACLASS",
+        "state": "not used",
+        "number_of_reads": 1
+    },
+    {
+        "list_of_streams": [
+            [
+                "0001110001000010001000001111010001011001011111001011011010011100011001110101101101",
+                1
+            ]
+        ],
+        "samples_per_bit": 1,
+        "timestamp": 1662064938.6049452,
+        "type": "ACLASS",
+        "state": "not used",
+        "number_of_reads": 1
+    },
+    {
+        "list_of_streams": [
+            [
+                "0001110011100111111000010011101011011101110111100111101011111010001111110100000000",
+                1
+            ]
+        ],
+        "samples_per_bit": 1,
+        "timestamp": 1662064943.0544782,
+        "type": "ACLASS",
+        "state": "not used",
+        "number_of_reads": 1
     }
 ]

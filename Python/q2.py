@@ -38,8 +38,6 @@ def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit):
         list_of_streams_of_partial_bits = []
         while True:
             try:
-                # blocksize = 30
-
                 y, timestamp = d.RFrecv(blocksize=8 * Q2_SAMPLES_PER_PARTIAL_BIT_READ)
                 yhex = binascii.hexlify(y).decode()
                 stream_of_partial_bits = bin(int(yhex, 16))[2:]
@@ -47,8 +45,6 @@ def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit):
                 if could_be_part_of_preamble(stream_of_partial_bits, samples_per_bit):
                     _MY_DEBUG and print("(%5.3f) received:  %s | %s" % (timestamp, yhex, stream_of_partial_bits))
                     list_of_streams_of_partial_bits.append(stream_of_partial_bits)
-
-                    # blocksize = 252
 
                     # for blocksize in [148,252,252,148,252,252,148,252,252,148]:
                     for blocksize in [252, 252, 236, 252, 236, 252, 252]:
@@ -306,9 +302,9 @@ def add_x(partial_bit_string):
 
 
 def execute_send_messages():
-    message_list = ["101110000001001001010000100101010100100010011010100000110101011110111100010111100111111010110101",
-                    "101110000001001001010000100111101010110011010010101101001100100011110000111101000011111011011100",
-                    "101110000001001001010000100001100111000000100001000111011101000000011101101001011100111101010111"]
+    message_list = ["101110000001001001100000000011001100001111000100110110110111001110001100001100100101100000001111",
+                    "101110000001001001100000000011010110000010101111111010010010011101100000011001101111101101111011",
+                    "101110000001001001100000000101010011111101000100100011000100011101010010011010000101101010001111"]
     tx_rate = Q2_PARTIAL_BIT_RATE_SEND * Q2_SAMPLES_PER_PARTIAL_BIT_SEND
 
     d = RfCat()
@@ -340,7 +336,7 @@ def execute_send_messages():
 # --
 
 def main():
-    # execute_read_messages()
+    #execute_read_messages()
     execute_send_messages()
 
 

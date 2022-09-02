@@ -21,12 +21,10 @@ ACLASS_PARTIAL_BITS_FOR_ONE_SEND = _ZERO * 2 + _ONE * 2
 ACLASS_PARTIAL_BIT_RATE_READ = ACLASS_BIT_RATE_READ * ACLASS_PARTIAL_BITS_PER_BIT_READ
 ACLASS_PARTIAL_BIT_RATE_SEND = ACLASS_BIT_RATE_SEND * ACLASS_PARTIAL_BITS_PER_BIT_SEND
 
-ACLASS_PREAMBLE_BITS_SEND = 46
+ACLASS_PREAMBLE_BITS_SEND = 172
 ACLASS_MESSAGE_BITS = 82
-ACLASS_FINAL_PARTIAL_BITS_SEND = 0
+ACLASS_FINAL_PARTIAL_BITS_SEND = 162
 
-#ACLASS_MODULATION_FREQUENCY = 434411000
-#ACLASS_MODULATION_FREQUENCY = 433919300
 ACLASS_MODULATION_FREQUENCY = 433925600
 
 _MY_DEBUG = False
@@ -40,9 +38,7 @@ def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit):
         list_of_streams_of_partial_bits = []
         while True:
             try:
-                blocksize = 32
-
-                y, timestamp = d.RFrecv(blocksize=blocksize)
+                y, timestamp = d.RFrecv(blocksize=16 * ACLASS_SAMPLES_PER_PARTIAL_BIT_READ)
                 yhex = binascii.hexlify(y).decode()
                 stream_of_partial_bits = bin(int(yhex, 16))[2:]
 
@@ -50,7 +46,8 @@ def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit):
                     _MY_DEBUG and print("(%5.3f) received:  %s | %s" % (timestamp, yhex, stream_of_partial_bits))
                     list_of_streams_of_partial_bits.append(stream_of_partial_bits)
 
-                    for blocksize in [64, 252, 252]:
+                    #for blocksize in [64, 252, 252]:
+                    for blocksize in [256+128,256+128,256+128]: #256+256-32
                         y, timestamp = d.RFrecv(blocksize=blocksize)
                         yhex = binascii.hexlify(y).decode()
                         stream_of_partial_bits = bin(int(yhex, 16))[2:]
@@ -81,8 +78,8 @@ def could_be_part_of_preamble(stream_of_partial_bits, samples_per_bit):
         magic_fraction = abs(magic_sum) / len(list_of_received_partial_bit_counts)
 
         print(f'[{round(magic_fraction, 1)}] ', end='')
-        print(f'list_of_received_partial_bit_counts = {[round(value,1) for value in list_of_received_partial_bit_counts]}')
-        if 1.8 <= magic_fraction <= 2.2:
+        #print(f'list_of_received_partial_bit_counts = {[round(value,1) for value in list_of_received_partial_bit_counts]}')
+        if 1.9 <= magic_fraction <= 2.1:
             return True
         else:
             a = 1
@@ -310,35 +307,42 @@ def add_x(partial_bit_string):
 
 
 def execute_send_messages():
-    message = '00111111111111111101101001101010011100001000101010110101110010000100110111100010'
+    message_list = ['0010110001110100111010000011111010101100011111100110001010110110011111001000000000',
+                    '0001110001110100111010000011111010101100011111100110001010110110011111001000000000']
     tx_rate = ACLASS_PARTIAL_BIT_RATE_SEND * ACLASS_SAMPLES_PER_PARTIAL_BIT_SEND
 
     d = RfCat()
-    d.setFreq(ACLASS_MODULATION_FREQUENCY)
+    d.setFreq(ACLASS_MODULATION_FREQUENCY) #setMdmChanBW
     d.setMdmModulation(MOD_ASK_OOK)
     d.setMdmDRate(tx_rate)
     d.setMaxPower()
     d.lowball()
 
-    partial_bit_string_preamble = convert_message_to_partial_bit_string_to_send(_ZERO * ACLASS_PREAMBLE_BITS_SEND) + '111100' + ('111000' * 3)
-    partial_bit_string_message = convert_message_to_partial_bit_string_to_send(message)
-    partial_bit_string_hex = add_x(partial_bit_string_preamble + partial_bit_string_message)
+    partial_bit_string_preamble = convert_message_to_partial_bit_string_to_send(_ZERO * ACLASS_PREAMBLE_BITS_SEND)
+    partial_bit_string_mid_preamble = _ZERO * (ACLASS_PARTIAL_BITS_PER_BIT_SEND * 6)
+    partial_bit_string_suffix = _ZERO * (ACLASS_PARTIAL_BITS_PER_BIT_SEND * ACLASS_FINAL_PARTIAL_BITS_SEND)
 
-    print(f'{partial_bit_string_preamble=}')
-    print(f'{partial_bit_string_message=}')
+    #for pos, message in enumerate(message_list):
+    partial_bit_string_message_0 = convert_message_to_partial_bit_string_to_send(message_list[0])
+    partial_bit_string_message_1 = convert_message_to_partial_bit_string_to_send(message_list[1])
+    partial_bit_string_hex = add_x(partial_bit_string_preamble + partial_bit_string_message_0 + partial_bit_string_mid_preamble + partial_bit_string_message_1 + partial_bit_string_suffix)
+
+    #print(f'{partial_bit_string_preamble=}')
+    #print(f'{partial_bit_string_message=}')
     print(f'{partial_bit_string_hex=}')
 
+    #   if pos == 0:
     d.makePktFLEN(len(partial_bit_string_hex))
 
-    d.RFxmit(partial_bit_string_hex, repeat=1)
-    d.setModeIDLE()
+    d.RFxmit(partial_bit_string_hex, repeat=0)
 
+    d.setModeIDLE()
 
 # --
 
 def main():
-    execute_read_messages()
-    #execute_send_messages()
+    #execute_read_messages()
+    execute_send_messages()
 
 
 # --
