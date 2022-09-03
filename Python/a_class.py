@@ -1,5 +1,6 @@
 import json
 import binascii
+import sys
 from os.path import exists
 import bitstring as bitstring
 from rflib import *
@@ -79,7 +80,7 @@ def could_be_part_of_preamble(stream_of_partial_bits, samples_per_bit):
 
         print(f'[{round(magic_fraction, 1)}] ', end='')
         #print(f'list_of_received_partial_bit_counts = {[round(value,1) for value in list_of_received_partial_bit_counts]}')
-        if 1.9 <= magic_fraction <= 2.1:
+        if 1.8 <= magic_fraction <= 2.2:
             return True
         else:
             a = 1
@@ -260,13 +261,13 @@ def write_to_file(list_of_streams, samples_per_bit, timestamp, type, state, numb
 def execute_read_messages():
     sample_rate = ACLASS_PARTIAL_BIT_RATE_READ * ACLASS_SAMPLES_PER_PARTIAL_BIT_READ
 
-    d = RfCat()
+    d = RfCat(idx=0)
+    #d = RfCat() #setEnableMdmManchester #setMdmNumPreamble
     d.setFreq(ACLASS_MODULATION_FREQUENCY)
     d.setMdmModulation(MOD_ASK_OOK)
     d.setMdmDRate(sample_rate)
     d.setMaxPower()
     d.lowball()
-    # d.discover()
 
     try:
         while True:
@@ -278,10 +279,10 @@ def execute_read_messages():
             if list_of_valid_messages:
                 write_to_file(list_of_valid_messages, samples_per_bit, timestamp, "ACLASS", "not used", number_of_reads)
 
-    except KeyboardInterrupt:
-        d.setModeIDLE()
+    except ChipconUsbTimeoutException:
         print("Please press <enter> to stop")
         sys.stdin.read(1)
+        d.setModeIDLE()
     except Exception as e:
         d.setModeIDLE()
 
@@ -307,11 +308,12 @@ def add_x(partial_bit_string):
 
 
 def execute_send_messages():
-    message_list = ['0010110001110100111010000011111010101100011111100110001010110110011111001000000000',
-                    '0001110001110100111010000011111010101100011111100110001010110110011111001000000000']
+    message_list = ['0010110001000011101000001110001010111100010001011001001000100010011101010100000000',
+                    '0001110001000011101000001110001010111100010001011001001000100010011101010100000000']
     tx_rate = ACLASS_PARTIAL_BIT_RATE_SEND * ACLASS_SAMPLES_PER_PARTIAL_BIT_SEND
 
-    d = RfCat()
+    d = RfCat(idx=0)
+    #d = RfCat()
     d.setFreq(ACLASS_MODULATION_FREQUENCY) #setMdmChanBW
     d.setMdmModulation(MOD_ASK_OOK)
     d.setMdmDRate(tx_rate)
@@ -341,9 +343,8 @@ def execute_send_messages():
 # --
 
 def main():
-    #execute_read_messages()
+    execute_read_messages()
     execute_send_messages()
-
 
 # --
 

@@ -273,7 +273,7 @@ def execute_read_messages():
             if number_of_reads == 3:
                 write_to_file(list_of_valid_messages, samples_per_bit, timestamp, "Q2", "not used", number_of_reads)
 
-    except KeyboardInterrupt:
+    except ChipconUsbTimeoutException:
         d.setModeIDLE()
         print("Please press <enter> to stop")
         sys.stdin.read(1)
@@ -302,9 +302,9 @@ def add_x(partial_bit_string):
 
 
 def execute_send_messages():
-    message_list = ["101110000001001001100000000011001100001111000100110110110111001110001100001100100101100000001111",
-                    "101110000001001001100000000011010110000010101111111010010010011101100000011001101111101101111011",
-                    "101110000001001001100000000101010011111101000100100011000100011101010010011010000101101010001111"]
+    message_list = ["101110000001001001100000101110101101111101110001000000011111101010110101001111010001000101111100",
+                    "101110000001001001100000100000111111001111010010010001111001011111100011111001100100100010110101",
+                    "101110000001001001100000100000001010011101100010101001100001111000100011001010001011101100000111"]
     tx_rate = Q2_PARTIAL_BIT_RATE_SEND * Q2_SAMPLES_PER_PARTIAL_BIT_SEND
 
     d = RfCat()
@@ -336,8 +336,8 @@ def execute_send_messages():
 # --
 
 def main():
-    #execute_read_messages()
-    execute_send_messages()
+    execute_read_messages()
+    #execute_send_messages()
 
 
 # --

@@ -1,0 +1,379 @@
+[
+    {
+        "list_of_streams": [
+            [
+                "00111111000010100101011011110101111111000100100101011011010000111100100111100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662195496.1485047,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111011011101110100100001000110010010101001001110000101000010011011011100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662195639.1218853,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111110011110011100111111101011010001011000010000100110001000110111111100010",
+                1
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662196396.2171566,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 1
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111011111100100110000111001100100111000000011101100100111010100101111100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662196398.5898387,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111111010011010110111111101100111000101110011110101010011010110000111100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662196449.838187,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111111111111000111011001000011011000010011111010100000010100110110011100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662196468.5141377,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111110111011101110110110010110110101111111001111010111101110010001111100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662196500.2044342,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111110111011101110110110010110110101111111001111010111101110010001111100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662196500.4353683,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111001100010000010100010001101000101111100110100010111001011101100111100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662196957.2617774,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111101000001101000011000001011110100000001110110011011101100110000111100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662198686.8140595,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111101011000111001100101100101110110011000110001011100000110010110111100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662200970.9938684,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111110000001001100011000000101101001101100010101100111101001101111011100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662200976.3983843,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111001110010110110001110011100010001110001100111111011111011011001111100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662200979.337193,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111001011100110100100010001001100001101110010100111101010100000010111100010",
+                1
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662200990.7632043,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 1
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111000001010001010111011010001110000000011100111000111010110101010011100010",
+                1
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662201603.982739,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 1
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111101111010111011110110100111111011001111011110100011101001110100011100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662201608.8193557,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111100011111011100100111011011100100010111101000101100001000111011011100010",
+                1
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662201622.7363448,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 1
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111010011111010011010000100111110001110011100100100111111110101110011100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662201783.4735203,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111111111111101101001101010011100001000101010110101110010000100110111100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662201783.9132538,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111111111111101101001101010011100001000101010110101110010000100110111100010",
+                1
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662201784.451706,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 1
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111111111111101101001101010011100001000101010110101110010000100110111100010",
+                1
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662201784.8631213,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 1
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111111111111101101001101010011100001000101010110101110010000100110111100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662201785.5513735,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111111111111101101001101010011100001000101010110101110010000100110111100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662201786.0192337,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111111111111101101001101010011100001000101010110101110010000100110111100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662201786.4988174,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111101001011010110011011111111011101000000100111000101001001001001011100010",
+                1
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662201984.2213926,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 1
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111111111111101101001101010011100001000101010110101110010000100110111100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662201987.130718,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111111111111101101001101010011100001000101010110101110010000100110111100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662201988.1142302,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111110000000110011010110101011111110100100000011001011010101010011111100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662202073.553542,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    },
+    {
+        "list_of_streams": [
+            [
+                "00111111010110110101000001000011100100111001001011001111111111010100101011100010",
+                2
+            ]
+        ],
+        "samples_per_bit": 4,
+        "timestamp": 1662202077.2747824,
+        "type": "PASSAT",
+        "state": "not used",
+        "number_of_reads": 2
+    }
+]

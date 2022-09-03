@@ -3,8 +3,6 @@ import binascii
 from os.path import exists
 import bitstring as bitstring
 from rflib import *
-from threading import Thread
-import time
 
 _ZERO = '0'  # \ = high_low
 _ONE = '1'  # / = low_high
@@ -32,18 +30,7 @@ PASSAT_MODULATION_FREQUENCY = 434412100
 _MY_DEBUG = False
 
 
-# check = True
-#
-# def start_jamming():
-#     while True:
-#         if check == True:
-#             time.sleep(1.5)
-#             execute_send_messages()
-#         else:
-#             break
-#     return None
-
-def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit, jam: bool):
+def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit):
     print("Entering RFlisten mode...  packets arriving will be displayed on the screen")
     print("(press Enter to stop)")
 
@@ -58,10 +45,6 @@ def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit, jam: bool):
                 stream_of_partial_bits = bin(int(yhex, 16))[2:]
 
                 if could_be_part_of_preamble(stream_of_partial_bits, samples_per_bit):
-                    if jam:
-                        print('Preamble detected')
-                        return None, timestamp
-
                     _MY_DEBUG and print("(%5.3f) received:  %s | %s" % (timestamp, yhex, stream_of_partial_bits))
                     list_of_streams_of_partial_bits.append(stream_of_partial_bits)
 
@@ -73,6 +56,7 @@ def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit, jam: bool):
                         stream_of_partial_bits = bin(int(yhex, 16))[2:]
                         _MY_DEBUG and print("(%5.3f) received:  %s | %s" % (timestamp, yhex, stream_of_partial_bits))
                         list_of_streams_of_partial_bits.append(stream_of_partial_bits)
+
                     break
                 else:
                     _MY_DEBUG or print('.', end="")
@@ -80,7 +64,7 @@ def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit, jam: bool):
             except ChipconUsbTimeoutException:
                 _MY_DEBUG or print('!', end="")
                 list_of_streams_of_partial_bits = []
-                d.setModeIDLE()
+
         # stream_of_partial_bits = ''.join(list_of_streams_of_partial_bits)
         print('\n----------------------------')
         # return stream_of_partial_bits, timestamp
@@ -113,7 +97,7 @@ def get_next_message_start_position(list_of_received_partial_bit_counts, first_p
                     if -3.5 <= list_of_received_partial_bit_counts[pos + 3] <= -2.5:
                         if 2.5 <= list_of_received_partial_bit_counts[pos + 4] <= 3.5:
                             if -3.5 <= list_of_received_partial_bit_counts[pos + 5] <= -2.5:
-                                return pos + 6
+                                return pos+6
     return -1
 
 
@@ -271,27 +255,22 @@ def write_to_file(list_of_streams, samples_per_bit, timestamp, type, state, numb
 
 # --
 
-def execute_read_messages(d: RfCat, jam: bool):
+def execute_read_messages():
     sample_rate = PASSAT_PARTIAL_BIT_RATE_READ * PASSAT_SAMPLES_PER_PARTIAL_BIT_READ
 
-    d.setModeRX()
+    d = RfCat(idx=1)
     d.setFreq(PASSAT_MODULATION_FREQUENCY)
     d.setMdmModulation(MOD_ASK_OOK)
     d.setMdmDRate(sample_rate)
     d.setMaxPower()
     d.lowball()
+    # d.discover()
 
     try:
         while True:
             samples_per_bit = PASSAT_SAMPLES_PER_PARTIAL_BIT_READ
-            list_of_streams_of_partial_bits, timestamp = get_stream_of_partial_bits_from_RF(d, samples_per_bit, jam=jam)
-
-            if jam:
-                d.setModeIDLE()
-                return
-
+            list_of_streams_of_partial_bits, timestamp = get_stream_of_partial_bits_from_RF(d, samples_per_bit)
             list_of_valid_messages = get_list_of_valid_messages(list_of_streams_of_partial_bits, samples_per_bit)
-
             for valid_message, number_of_reads in list_of_valid_messages:
                 print(f'{valid_message}, {number_of_reads}')
             if list_of_valid_messages:
@@ -320,60 +299,44 @@ def convert_message_to_partial_bit_string_to_send(message: str):
 def add_x(partial_bit_string):
     partial_bit_string_hex = bitstring.BitArray(bin=partial_bit_string).tobytes()
 
+    # TODO: controlar el caso cuando al longitud de la cadena no sea multiplo de 8 bits
+
     return partial_bit_string_hex
 
 
-def execute_send_messages(d: RfCat, jam: bool):
+def execute_send_messages():
     message = '00111111111111111101101001101010011100001000101010110101110010000100110111100010'
     tx_rate = PASSAT_PARTIAL_BIT_RATE_SEND * PASSAT_SAMPLES_PER_PARTIAL_BIT_SEND
 
-    #d.setModeTX()
+    d = RfCat(idx=1)
     d.setFreq(PASSAT_MODULATION_FREQUENCY)
     d.setMdmModulation(MOD_ASK_OOK)
     d.setMdmDRate(tx_rate)
-    #d.setMaxPower()
+    d.setMaxPower()
     d.lowball()
 
-    if jam:
-        d.setPower(0x50)
-        partial_bit_string_jam_message = '111000' * int(252 * 8 / 6)
-        partial_bit_string_hex = add_x(partial_bit_string_jam_message)
+    partial_bit_string_preamble = convert_message_to_partial_bit_string_to_send(_ZERO * PASSAT_PREAMBLE_BITS_SEND) + '111100' + ('111000' * 3)
+    partial_bit_string_message = convert_message_to_partial_bit_string_to_send(message)
+    partial_bit_string_hex = add_x(partial_bit_string_preamble + partial_bit_string_message)
 
-        d.makePktFLEN(len(partial_bit_string_hex))
-        d.RFxmit(partial_bit_string_hex, repeat=1)
-    else:
-        d.setMaxPower()
-        partial_bit_string_preamble = convert_message_to_partial_bit_string_to_send(_ZERO * PASSAT_PREAMBLE_BITS_SEND) + '111100' + ('111000' * 3)
-        partial_bit_string_message = convert_message_to_partial_bit_string_to_send(message)
-        partial_bit_string_hex = add_x(partial_bit_string_preamble + partial_bit_string_message)
+    print(f'{partial_bit_string_preamble=}')
+    print(f'{partial_bit_string_message=}')
+    print(f'{partial_bit_string_hex=}')
 
-        print(f'{partial_bit_string_preamble=}')
-        print(f'{partial_bit_string_message=}')
-        print(f'{partial_bit_string_hex=}')
+    d.makePktFLEN(len(partial_bit_string_hex))
 
-        d.makePktFLEN(len(partial_bit_string_hex))
-
-        d.RFxmit(partial_bit_string_hex, repeat=1)
+    d.RFxmit(partial_bit_string_hex, repeat=1)
     d.setModeIDLE()
 
 
 # --
 
-def main(argv):
-    if len(argv) > 1:
-        d = RfCat(idx=0)
-        mode = argv[1]
-        if mode == "rx":
-            execute_read_messages(d, jam=False)
-        elif mode == "tx":
-            execute_send_messages(d, jam=False)
-        elif mode == "jam":
-            for attempt in range(5):
-                execute_read_messages(d, jam=True)
-                execute_send_messages(d, jam=True)
+def main():
+    execute_read_messages()
+    # execute_send_messages()
 
 
 # --
 
 if __name__ == '__main__':
-    main(argv=sys.argv)
+    main()
