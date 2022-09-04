@@ -59,10 +59,10 @@ def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit):
 
                     break
                 else:
-                    _MY_DEBUG or print('.', end="")
+                    print('.', end="")
                     list_of_streams_of_partial_bits = [stream_of_partial_bits]
             except ChipconUsbTimeoutException:
-                _MY_DEBUG or print('!', end="")
+                print('!', end="")
                 list_of_streams_of_partial_bits = []
 
         # stream_of_partial_bits = ''.join(list_of_streams_of_partial_bits)

@@ -105,7 +105,7 @@ def get_stream_of_partial_bits_from_RF(d: RfCat):
 
                 if could_be_part_of_valid_message(stream_of_partial_bits):
                     _MY_DEBUG and print("(%5.3f) received:  %s | %s" % (timestamp, yhex, stream_of_partial_bits))
-                    _MY_DEBUG or print('.', end="")
+                    print('.', end="")
                     list_of_streams_of_partial_bits.append(stream_of_partial_bits)
                 else:
                     if len(list_of_streams_of_partial_bits) >= 6:

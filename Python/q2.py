@@ -8,7 +8,7 @@ _ZERO = '0'  # \ = high_low
 _ONE = '1'  # / = low_high
 
 Q2_BIT_RATE_READ = 1700
-Q2_BIT_RATE_SEND = 1700
+Q2_BIT_RATE_SEND = 1696
 
 Q2_PARTIAL_BITS_PER_BIT_READ = 4
 Q2_PARTIAL_BITS_PER_BIT_SEND = 4
@@ -23,7 +23,7 @@ Q2_PARTIAL_BIT_RATE_SEND = Q2_BIT_RATE_SEND * Q2_PARTIAL_BITS_PER_BIT_SEND
 
 Q2_PREAMBLE_BITS_SEND = 214
 Q2_MESSAGE_BITS = 96
-Q2_FINAL_PARTIAL_BITS_SEND = 16
+Q2_FINAL_PARTIAL_BITS_SEND = 12
 
 Q2_MODULATION_FREQUENCY = 434421100
 
@@ -56,10 +56,10 @@ def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit):
 
                     break
                 else:
-                    _MY_DEBUG or print('.', end="")
+                    print('.', end="")
                     list_of_streams_of_partial_bits = [stream_of_partial_bits]
             except ChipconUsbTimeoutException:
-                _MY_DEBUG or print('!', end="")
+                print('!', end="")
                 list_of_streams_of_partial_bits = []
 
         # stream_of_partial_bits = ''.join(list_of_streams_of_partial_bits)
@@ -252,10 +252,9 @@ def write_to_file(list_of_streams, samples_per_bit, timestamp, type, state, numb
 
 # --
 
-def execute_read_messages():
+def execute_read_messages(d: RfCat, jam: bool):
     sample_rate = Q2_PARTIAL_BIT_RATE_READ * Q2_SAMPLES_PER_PARTIAL_BIT_READ
 
-    d = RfCat()
     d.setFreq(Q2_MODULATION_FREQUENCY)
     d.setMdmModulation(MOD_ASK_OOK)
     d.setMdmDRate(sample_rate)
@@ -267,18 +266,28 @@ def execute_read_messages():
         while True:
             samples_per_bit = Q2_SAMPLES_PER_PARTIAL_BIT_READ
             list_of_streams_of_partial_bits, timestamp = get_stream_of_partial_bits_from_RF(d, samples_per_bit)
+
+            if jam:
+                d.setModeIDLE()
+                return None
+
             list_of_valid_messages = get_list_of_valid_messages(list_of_streams_of_partial_bits, samples_per_bit)
+
             for valid_message, number_of_reads in list_of_valid_messages:
                 print(f'{valid_message}, {number_of_reads}')
-            if number_of_reads == 3:
+            #if number_of_reads == 3:
+            if len(list_of_valid_messages) == 3:
                 write_to_file(list_of_valid_messages, samples_per_bit, timestamp, "Q2", "not used", number_of_reads)
+                return list_of_valid_messages
 
     except ChipconUsbTimeoutException:
         d.setModeIDLE()
         print("Please press <enter> to stop")
         sys.stdin.read(1)
+        return None
     except Exception as e:
         d.setModeIDLE()
+        return None
 
 
 def convert_message_to_partial_bit_string_to_send(message: str):
@@ -301,46 +310,70 @@ def add_x(partial_bit_string):
     return partial_bit_string_hex
 
 
-def execute_send_messages():
-    message_list = ["101110000001001001100000101110101101111101110001000000011111101010110101001111010001000101111100",
+def execute_send_messages(d: RfCat, message_list:[]=None, jam:bool=None):
+    if not message_list:
+        message_list = ["101110000001001001100000101110101101111101110001000000011111101010110101001111010001000101111100",
                     "101110000001001001100000100000111111001111010010010001111001011111100011111001100100100010110101",
                     "101110000001001001100000100000001010011101100010101001100001111000100011001010001011101100000111"]
+    else:
+        message_list = [tup[0:3][0] for tup in message_list]
+
     tx_rate = Q2_PARTIAL_BIT_RATE_SEND * Q2_SAMPLES_PER_PARTIAL_BIT_SEND
 
-    d = RfCat()
     d.setFreq(Q2_MODULATION_FREQUENCY)
     d.setMdmModulation(MOD_ASK_OOK)
     d.setMdmDRate(tx_rate)
     d.setMaxPower()
     d.lowball()
 
-    partial_bit_string_preamble = convert_message_to_partial_bit_string_to_send(_ONE * Q2_PREAMBLE_BITS_SEND)
-    partial_bit_string_suffix = _ZERO * (Q2_PARTIAL_BITS_PER_BIT_SEND * Q2_FINAL_PARTIAL_BITS_SEND)
+    if jam:
+        d.setPower(0x50)
+        partial_bit_string_jam_message = '111000' * int(252 * 8 / 6)
+        partial_bit_string_hex = add_x(partial_bit_string_jam_message)
 
-    for pos, message in enumerate(message_list):
-        partial_bit_string_message = convert_message_to_partial_bit_string_to_send(message)
-        partial_bit_string_hex = add_x(partial_bit_string_preamble + partial_bit_string_message + partial_bit_string_suffix)
+        d.makePktFLEN(len(partial_bit_string_hex))
+        d.RFxmit(partial_bit_string_hex, repeat=1)
+    else:
+        d.setMaxPower()
+        partial_bit_string_preamble = convert_message_to_partial_bit_string_to_send(_ONE * Q2_PREAMBLE_BITS_SEND)
+        partial_bit_string_suffix = _ZERO * (Q2_PARTIAL_BITS_PER_BIT_SEND * Q2_FINAL_PARTIAL_BITS_SEND)
 
-        # print(f'{partial_bit_string_preamble=}')
-        print(f'{partial_bit_string_message=}')
-        print(f'{partial_bit_string_hex=}')
+        for pos, message in enumerate(message_list):
+            partial_bit_string_message = convert_message_to_partial_bit_string_to_send(message)
+            partial_bit_string_hex = add_x(partial_bit_string_preamble + partial_bit_string_message + partial_bit_string_suffix)
 
-        if pos == 0:
-            d.makePktFLEN(len(partial_bit_string_hex))
+            # print(f'{partial_bit_string_preamble=}')
+            print(f'{partial_bit_string_message=}')
+            print(f'{partial_bit_string_hex=}')
 
-        d.RFxmit(partial_bit_string_hex, repeat=0)
+            if pos == 0:
+                d.makePktFLEN(len(partial_bit_string_hex))
+
+            d.RFxmit(partial_bit_string_hex, repeat=0)
 
     d.setModeIDLE()
 
-
 # --
 
-def main():
-    execute_read_messages()
-    #execute_send_messages()
-
+def main(argv):
+    if len(argv) > 1:
+        d = RfCat(idx=0)
+        mode = argv[1]
+        if mode == "rx":
+            execute_read_messages(d, jam=False)
+        elif mode == "tx":
+            execute_send_messages(d, jam=False)
+        elif mode == "jam":
+            for attempt in range(5):
+                execute_read_messages(d, jam=True)
+                execute_send_messages(d, jam=True)
+        elif mode == "echo":
+            for attempt in range(5):
+                message_list = execute_read_messages(d, jam=False)
+                time.sleep(0.1)
+                execute_send_messages(d, message_list=message_list, jam=False)
 
 # --
 
 if __name__ == '__main__':
-    main()
+    main(argv=sys.argv)
