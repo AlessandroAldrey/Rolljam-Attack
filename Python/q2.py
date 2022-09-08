@@ -30,7 +30,7 @@ Q2_MODULATION_FREQUENCY = 434421100
 _MY_DEBUG = False
 
 
-def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit):
+def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit, jam: bool):
     print("Entering RFlisten mode...  packets arriving will be displayed on the screen")
     print("(press Enter to stop)")
 
@@ -43,8 +43,11 @@ def get_stream_of_partial_bits_from_RF(d: RfCat, samples_per_bit):
                 stream_of_partial_bits = bin(int(yhex, 16))[2:]
 
                 if could_be_part_of_preamble(stream_of_partial_bits, samples_per_bit):
-                    _MY_DEBUG and print("(%5.3f) received:  %s | %s" % (timestamp, yhex, stream_of_partial_bits))
+                    #_MY_DEBUG and print("(%5.3f) received:  %s | %s" % (timestamp, yhex, stream_of_partial_bits))
                     list_of_streams_of_partial_bits.append(stream_of_partial_bits)
+                    if jam:
+                        print('Preamble detected')
+                        return None, timestamp
 
                     # for blocksize in [148,252,252,148,252,252,148,252,252,148]:
                     for blocksize in [252, 252, 236, 252, 236, 252, 252]:
@@ -255,6 +258,7 @@ def write_to_file(list_of_streams, samples_per_bit, timestamp, type, state, numb
 def execute_read_messages(d: RfCat, jam: bool):
     sample_rate = Q2_PARTIAL_BIT_RATE_READ * Q2_SAMPLES_PER_PARTIAL_BIT_READ
 
+    d.setModeRX()
     d.setFreq(Q2_MODULATION_FREQUENCY)
     d.setMdmModulation(MOD_ASK_OOK)
     d.setMdmDRate(sample_rate)
@@ -265,7 +269,7 @@ def execute_read_messages(d: RfCat, jam: bool):
     try:
         while True:
             samples_per_bit = Q2_SAMPLES_PER_PARTIAL_BIT_READ
-            list_of_streams_of_partial_bits, timestamp = get_stream_of_partial_bits_from_RF(d, samples_per_bit)
+            list_of_streams_of_partial_bits, timestamp = get_stream_of_partial_bits_from_RF(d, samples_per_bit, jam=jam)
 
             if jam:
                 d.setModeIDLE()
@@ -313,8 +317,8 @@ def add_x(partial_bit_string):
 def execute_send_messages(d: RfCat, message_list:[]=None, jam:bool=None):
     if not message_list:
         message_list = ["101110000001001001100000101110101101111101110001000000011111101010110101001111010001000101111100",
-                    "101110000001001001100000100000111111001111010010010001111001011111100011111001100100100010110101",
-                    "101110000001001001100000100000001010011101100010101001100001111000100011001010001011101100000111"]
+                        "101110000001001001100000100000111111001111010010010001111001011111100011111001100100100010110101",
+                        "101110000001001001100000100000001010011101100010101001100001111000100011001010001011101100000111"]
     else:
         message_list = [tup[0:3][0] for tup in message_list]
 
@@ -327,13 +331,17 @@ def execute_send_messages(d: RfCat, message_list:[]=None, jam:bool=None):
     d.lowball()
 
     if jam:
-        d.setPower(0x50)
-        partial_bit_string_jam_message = '111000' * int(252 * 8 / 6)
-        partial_bit_string_hex = add_x(partial_bit_string_jam_message)
+        # d.setPower(0x50)
+        # partial_bit_string_jam_message = '111000' * int(252 * 8 / 6)
+        # partial_bit_string_hex = add_x(partial_bit_string_jam_message)
+        #
+        # d.makePktFLEN(len(partial_bit_string_hex))
+        # d.RFxmit(partial_bit_string_hex, repeat=1)
 
-        d.makePktFLEN(len(partial_bit_string_hex))
-        d.RFxmit(partial_bit_string_hex, repeat=1)
-    else:
+        message_list = ["101110000001001001100000100010100110101001110110101100001001000110101110110111000000001000001101",
+                        "101110000001001001100000101101111010000100011111100101001101010110010001100100101110000110100000",
+                        "101110000001001001100000100001101011110111010111101100100001011010000100001110001000010110111011"]
+
         d.setMaxPower()
         partial_bit_string_preamble = convert_message_to_partial_bit_string_to_send(_ONE * Q2_PREAMBLE_BITS_SEND)
         partial_bit_string_suffix = _ZERO * (Q2_PARTIAL_BITS_PER_BIT_SEND * Q2_FINAL_PARTIAL_BITS_SEND)
@@ -350,6 +358,24 @@ def execute_send_messages(d: RfCat, message_list:[]=None, jam:bool=None):
                 d.makePktFLEN(len(partial_bit_string_hex))
 
             d.RFxmit(partial_bit_string_hex, repeat=0)
+
+    else:
+        d.setMaxPower()
+        partial_bit_string_preamble = convert_message_to_partial_bit_string_to_send(_ONE * Q2_PREAMBLE_BITS_SEND)
+        partial_bit_string_suffix = _ZERO * (Q2_PARTIAL_BITS_PER_BIT_SEND * Q2_FINAL_PARTIAL_BITS_SEND)
+
+        for pos, message in enumerate(message_list):
+            partial_bit_string_message = convert_message_to_partial_bit_string_to_send(message)
+            partial_bit_string_hex = add_x(partial_bit_string_preamble + partial_bit_string_message + partial_bit_string_suffix)
+
+            # print(f'{partial_bit_string_preamble=}')
+            print(f'{partial_bit_string_message=}')
+            print(f'{partial_bit_string_hex=}')
+
+            if pos == 0:
+                d.makePktFLEN(len(partial_bit_string_hex))
+
+            d.RFxmit(partial_bit_string_hex, repeat=1)
 
     d.setModeIDLE()
 
@@ -371,6 +397,11 @@ def main(argv):
             for attempt in range(5):
                 message_list = execute_read_messages(d, jam=False)
                 time.sleep(0.1)
+                execute_send_messages(d, message_list=message_list, jam=False)
+        elif mode == "echo_with_delay":
+            for attempt in range(5):
+                message_list = execute_read_messages(d, jam=False)
+                time.sleep(5)
                 execute_send_messages(d, message_list=message_list, jam=False)
 
 # --
