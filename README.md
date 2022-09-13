@@ -1,6 +1,12 @@
 # Senior thesis
 In this repository you will find the necessary information to be able to carry out both, the replay attack and the rolljam attack against different devices.
 
+The content of it is structured as follows:
+* **Python folder**. It contains the scripts for each analyzed device.
+* **Samples/JSON folder**. This folder contains the captured signal messages in JSON format for each remote access key.
+* **Videos folder**. It contains different demonstrations for the different attacks.
+* **WAV_Files folder**. Audio recordings of each analyzed device are located in this folder.
+
 Requirements:
 * **Two YARD Stick One**. One of them will be used for jamming and the other one for capturing and sending the replica of the signal.
 * **A Raspberry Pi 4B**. The Raspberry will use one of the YARD Stick One, it will be in charge of being close to the vehicle that we want to test, and do the jamming when the desired signal is detected.
@@ -14,9 +20,3 @@ Each script, except the garage's one, has different modes:
 * **echo_with_delay**. This modality is similar to the previous one but with a delay of 5 seconds between the reception and the sending of the signal.
 * **jam**. In this mode the YARD Stick One listens for a preamble of a signal, when it detects it, it starts to jam (jamming power must be configured as needed).
 * **jam_with_delay**. This modality is similar to the previous one but with a 10-second delay once the jamming has been done.
-
-The content of it is structured as follows:
-* **Python folder**. It contains the scripts for each analyzed device.
-* **Samples/JSON folder**. This folder contains the captured signal messages in JSON format for each remote access key.
-* **Videos folder**. It contains different demonstrations for the different attacks.
-* **WAV_Files folder**. Audio recordings of each analyzed device are located in this folder.
