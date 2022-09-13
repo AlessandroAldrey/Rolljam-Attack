@@ -5,7 +5,7 @@ Requirements:
 * **Two YARD Stick One**. One of them will be used for jamming and the other one for capturing and sending the replica of the signal.
 * **A Raspberry Pi 4B**. The Raspberry will use one of the YARD Stick One, it will be in charge of being close to the vehicle that we want to test, and do the jamming when the desired signal is detected.
 * **Different key fobs**. The implemented scripts are useful against an Aprimatic TX2M, a Volkswagen Passat (year 2002), a Mercedes A Class (year 2006) and an Audi Q2 (year 2021, you can only do the jamming against it).
-  ** Python 3.9.13 **. The following libraries are needed: JSON, Binascii, Exists, Bitstring, Time, Rflib.
+*  **Python 3.9.13**. The following libraries are needed: JSON, Binascii, Exists, Bitstring, Time, Rflib.
  
 Each script, except the garage's one, has different modes:
 * **rx**. This mode sets the YARD Stick One in capture mode, when it detects a signal from a remote control, if it has captured it correctly, it saves it in a JSON file.
